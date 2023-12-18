@@ -6,7 +6,8 @@ from __future__ import annotations # See https://peps.python.org/pep-0563/
 
 import importlib.resources as importlib_resources
 import json
-from typing import Dict, Iterable, Tuple, TYPE_CHECKING
+import os
+from typing import Any, Dict, Iterable, TextIO, Tuple, TYPE_CHECKING
 
 from . import config
 
@@ -38,6 +39,41 @@ def build_multibase_tables(bases: Iterable[Multibase]) -> Tuple[Dict[str, Multib
         name_table[e.name] = e
     return code_table, name_table
 
+def normalize_path(path: Any) -> str:
+    """
+        Normalize a path by ensuring it is a string.
+
+        If the resulting string contains path separators, an exception is raised.
+
+        Code snippet from
+        `importlib_resources <https://github.com/python/importlib_resources/>`_.
+
+        See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+    """
+    str_path = str(path)
+    parent, file_name = os.path.split(str_path)
+    if parent:
+        raise ValueError(f'{path!r} must be only a file name')
+    return file_name
+
+def open_text(
+    package: importlib_resources.Package,
+    resource: importlib_resources.Resource,
+    encoding: str = 'utf-8',
+    errors: str = 'strict',
+) -> TextIO:
+    """
+        Return a file-like object opened for text reading of the resource.
+
+        Code snippet from
+        `importlib_resources <https://github.com/python/importlib_resources/>`_.
+
+        See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+    """
+    return (
+        importlib_resources.files(package) / normalize_path(resource)
+    ).open("r", encoding=encoding, errors=errors)
+
 def load_multibase_table() -> Tuple[Dict[str, Multibase], Dict[str, Multibase]]:
     """
         Returns code->encoding and name->encoding mappings created (via :func:`build_multibase_tables`) from the local copy of `multibase-table.json`.
@@ -50,7 +86,8 @@ def load_multibase_table() -> Tuple[Dict[str, Multibase], Dict[str, Multibase]]:
     """
     # pylint: disable = import-outside-toplevel
     from multiformats.multibase import Multibase
-    with importlib_resources.open_text("multiformats_config", "multibase-table.json", encoding="utf8") as _table_f:
+    # with importlib_resources.open_text("multiformats_config", "multibase-table.json", encoding="utf8") as _table_f:
+    with open_text("multiformats_config", "multibase-table.json", encoding="utf8") as _table_f:
         table_json = json.load(_table_f)
         multibases = (Multibase(**row) for row in table_json)
         if config._enabled_multibases is not None:

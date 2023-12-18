@@ -22,7 +22,7 @@
 
 from __future__ import annotations # See https://peps.python.org/pep-0563/
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from .config import enable
 
