@@ -7,6 +7,7 @@ import io
 import json
 import pprint
 import textwrap
+from numpy import character
 
 # not a dependency for the `multiformats` library
 import requests
@@ -25,10 +26,32 @@ new_bytes = requests.get(multibase_table_url).content
 new_text = new_bytes.decode("utf-8")
 print("Building new multibase table...")
 reader = csv.DictReader(io.StringIO(new_text))
-clean_rows = ({k.strip(): v.strip() for k, v in row.items()} for row in reader)
-renamed_rows = ({(k if k != "encoding" else "name"): v for k, v in row.items()} for row in clean_rows)
-encodings = (multibase.Multibase(**{k.strip(): v.strip() for k, v in _row.items()})
-             for _row in renamed_rows)
+rows = [{k.strip(): v.strip() for k, v in row.items()} for row in reader]
+for r, row in enumerate(rows):
+    if sorted(row.keys()) != ['Unicode', 'character', 'description', 'encoding', 'status']:
+        raise ValueError(
+            f"Unexpected columns in row {r}: {sorted(row.keys())}"
+        )
+    if not row["Unicode"].startswith("U+"):
+        raise ValueError(
+            f"In row {r}, expected row['Unicode'] to start with 'U+', found {row['Unicode']}."
+        )
+    code = "\x00" if (row_code:=row["character"]) == "NUL" else row_code
+    if code != chr(int(row["Unicode"][2:], 16)):
+        raise ValueError(
+            f"In row {r}, expected row['character'] to be "
+            f"{chr(int(row['Unicode'][2:], 16))!r}, found {code!r}."
+        )
+encodings = [
+    multibase.Multibase(
+        name="identity" if row_code == "NUL" else row["encoding"],
+        code="\x00" if row_code == "NUL" else row_code,
+        status=row["status"],
+        description=row["description"]
+    )
+    for row in rows
+    if (row_code:=row["character"]) == "NUL" or row["encoding"] != "none"
+]
 new_table, _ = build_multibase_tables(encodings)
 
 # Loads and validates the current multibase table:
@@ -36,10 +59,32 @@ print("Building current multibase table...")
 with open("multiformats_config/multibase-table.csv", "r", encoding="utf8") as f:
     current_text = f.read()
 reader = csv.DictReader(io.StringIO(current_text))
-clean_rows = ({k.strip(): v.strip() for k, v in row.items()} for row in reader)
-renamed_rows = ({(k if k != "encoding" else "name"): v for k, v in row.items()} for row in clean_rows)
-encodings = (multibase.Multibase(**{k.strip(): v.strip() for k, v in _row.items()})
-             for _row in renamed_rows)
+rows = [{k.strip(): v.strip() for k, v in row.items()} for row in reader]
+for r, row in enumerate(rows):
+    if sorted(row.keys()) != ['Unicode', 'character', 'description', 'encoding', 'status']:
+        raise ValueError(
+            f"Unexpected columns in row {r}: {sorted(row.keys())}"
+        )
+    if not row["Unicode"].startswith("U+"):
+        raise ValueError(
+            f"In row {r}, expected row['Unicode'] to start with 'U+', found {row['Unicode']}."
+        )
+    code = "\x00" if (row_code:=row["character"]) == "NUL" else row_code
+    if code != chr(int(row["Unicode"][2:], 16)):
+        raise ValueError(
+            f"In row {r}, expected row['character'] to be "
+            f"{chr(int(row['Unicode'][2:], 16))!r}, found {code!r}."
+        )
+encodings = [
+    multibase.Multibase(
+        name="identity" if row_code == "NUL" else row["encoding"],
+        code="\x00" if row_code == "NUL" else row_code,
+        status=row["status"],
+        description=row["description"]
+    )
+    for row in rows
+    if (row_code:=row["character"]) == "NUL" or row["encoding"] != "none"
+]
 current_table, _ = build_multibase_tables(encodings)
 
 print()

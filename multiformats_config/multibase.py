@@ -28,15 +28,14 @@ def build_multibase_tables(bases: Iterable[Multibase]) -> Tuple[Dict[str, Multib
     # pylint: disable = import-outside-toplevel
     from multiformats.multibase import Multibase
     from multiformats.multibase.err import MultibaseValueError
-    # validate(multicodecs, Iterable[Multicodec]) # TODO: not yet properly supported by typing-validation
     code_table: Dict[str, Multibase] = {}
     name_table: Dict[str, Multibase] = {}
     for e in bases:
         if e.code in code_table:
-            raise MultibaseValueError(f"Multicodec name {e.name} appears multiple times in table.")
+            raise MultibaseValueError(f"Multibase code {e.code} appears multiple times in table.")
         code_table[e.code] = e
         if e.name in name_table:
-            raise MultibaseValueError(f"Multicodec name {e.name} appears multiple times in table.")
+            raise MultibaseValueError(f"Multibase name {e.name} appears multiple times in table.")
         name_table[e.name] = e
     return code_table, name_table
 
