@@ -72,6 +72,7 @@ if sys.version_info[1] >= 9:
 
             See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
         """
+        # pylint: disable = no-member
         return (
             importlib_resources.files(package) / normalize_path(resource)
         ).open("r", encoding=encoding, errors=errors)
