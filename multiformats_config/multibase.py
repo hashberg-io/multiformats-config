@@ -7,6 +7,7 @@ from __future__ import annotations # See https://peps.python.org/pep-0563/
 import importlib.resources as importlib_resources
 import json
 import os
+import sys
 from typing import Any, Dict, Iterable, TextIO, Tuple, TYPE_CHECKING
 
 from . import config
@@ -39,40 +40,44 @@ def build_multibase_tables(bases: Iterable[Multibase]) -> Tuple[Dict[str, Multib
         name_table[e.name] = e
     return code_table, name_table
 
-def normalize_path(path: Any) -> str:
-    """
-        Normalize a path by ensuring it is a string.
+if sys.version_info[1] >= 9:
+    def normalize_path(path: Any) -> str:
+        """
+            Normalize a path by ensuring it is a string.
 
-        If the resulting string contains path separators, an exception is raised.
+            If the resulting string contains path separators, an exception is raised.
 
-        Code snippet from
-        `importlib_resources <https://github.com/python/importlib_resources/>`_.
+            Code snippet from
+            `importlib_resources <https://github.com/python/importlib_resources/>`_.
 
-        See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
-    """
-    str_path = str(path)
-    parent, file_name = os.path.split(str_path)
-    if parent:
-        raise ValueError(f'{path!r} must be only a file name')
-    return file_name
+            See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+        """
+        str_path = str(path)
+        parent, file_name = os.path.split(str_path)
+        if parent:
+            raise ValueError(f'{path!r} must be only a file name')
+        return file_name
 
-def open_text(
-    package: importlib_resources.Package,
-    resource: importlib_resources.Resource,
-    encoding: str = 'utf-8',
-    errors: str = 'strict',
-) -> TextIO:
-    """
-        Return a file-like object opened for text reading of the resource.
+    def open_text(
+        package: importlib_resources.Package,
+        resource: importlib_resources.Resource,
+        encoding: str = 'utf-8',
+        errors: str = 'strict',
+    ) -> TextIO:
+        """
+            Return a file-like object opened for text reading of the resource.
 
-        Code snippet from
-        `importlib_resources <https://github.com/python/importlib_resources/>`_.
+            Code snippet from
+            `importlib_resources <https://github.com/python/importlib_resources/>`_.
 
-        See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
-    """
-    return (
-        importlib_resources.files(package) / normalize_path(resource)
-    ).open("r", encoding=encoding, errors=errors)
+            See https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+        """
+        return (
+            importlib_resources.files(package) / normalize_path(resource)
+        ).open("r", encoding=encoding, errors=errors)
+else:
+    open_text = importlib_resources.open_text
+
 
 def load_multibase_table() -> Tuple[Dict[str, Multibase], Dict[str, Multibase]]:
     """
